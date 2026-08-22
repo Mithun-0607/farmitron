@@ -73,8 +73,9 @@ export default function WeatherIntelligencePage() {
     setIsForecasting(true);
     setForecastError(null);
 
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000';
     try {
-      const response = await fetch('http://127.0.0.1:8000/predict-weather', {
+      const response = await fetch(`${apiBase}/predict-weather`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -107,7 +108,7 @@ export default function WeatherIntelligencePage() {
     } catch (err: any) {
       setForecastError(
         err.message ||
-          'Unable to connect to FastAPI backend at http://127.0.0.1:8000/predict-weather. Please ensure uvicorn is running.'
+          `Unable to connect to FARMiTRON AI backend at ${process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000'}/predict-weather. Please ensure uvicorn is running.`
       );
     } finally {
       setIsForecasting(false);
@@ -159,7 +160,7 @@ export default function WeatherIntelligencePage() {
               <Badge variant="green" icon={<Brain className="w-3.5 h-3.5 text-[#2F6B45]" />}>
                 RandomForest Regressor — Tomorrow's Temp
               </Badge>
-              <span className="text-xs font-mono text-[#66706A]">http://127.0.0.1:8000/predict-weather</span>
+              <span className="text-xs font-mono text-[#66706A]">{process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000'}/predict-weather</span>
             </div>
             <h2 className="text-xl font-extrabold text-[#111815]">AI Temperature Forecast Engine</h2>
             <p className="text-xs text-[#66706A]">
@@ -251,7 +252,7 @@ export default function WeatherIntelligencePage() {
             </div>
             <h3 className="text-lg font-extrabold text-[#111815]">Running RandomForest Weather Model...</h3>
             <p className="text-xs text-[#66706A]">
-              Transmitting 13 weather telemetry features to http://127.0.0.1:8000/predict-weather
+              Transmitting 13 weather telemetry features to FastAPI /predict-weather.
             </p>
           </div>
         )}

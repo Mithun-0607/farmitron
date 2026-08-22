@@ -17,10 +17,21 @@ app = FastAPI(
     version="3.0.0"
 )
 
-# Configure CORS Middleware for Next.js frontend
+# Configure CORS Middleware
+# In production: set ALLOWED_ORIGINS env var to your deployed frontend URLs
+# e.g. ALLOWED_ORIGINS="https://farmitron.vercel.app,https://www.farmitron.com"
+_raw_origins = os.environ.get("ALLOWED_ORIGINS", "")
+_extra_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
+ALLOW_ORIGINS = list({
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    *_extra_origins,
+}) or ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"],
+    allow_origins=ALLOW_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -395,4 +406,5 @@ def predict_weather(data: WeatherForecastInput):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)

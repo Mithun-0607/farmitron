@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000';
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { N = 90, P = 42, K = 43, temperature = 23.6, humidity = 82.0, ph = 6.5, rainfall = 202.9 } = body;
 
-    // Call Python FastAPI ML Backend on http://127.0.0.1:8000/predict-crop
-    const fastApiUrl = 'http://127.0.0.1:8000/predict-crop';
-    
-    const response = await fetch(fastApiUrl, {
+    const response = await fetch(`${API_BASE_URL}/predict-crop`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -34,9 +34,9 @@ export async function POST(request: Request) {
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to connect to Python FastAPI ML backend at http://127.0.0.1:8000/predict-crop.' 
+      {
+        success: false,
+        error: `Failed to connect to FARMiTRON AI backend at ${API_BASE_URL}/predict-crop.`,
       },
       { status: 500 }
     );

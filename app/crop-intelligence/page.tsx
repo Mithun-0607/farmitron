@@ -85,8 +85,9 @@ export default function CropIntelligencePage() {
       setIsAnalyzing(true);
       setErrorMessage(null);
 
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000';
       try {
-        const response = await fetch("http://127.0.0.1:8000/predict-crop", {
+        const response = await fetch(`${apiBase}/predict-crop`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -117,7 +118,7 @@ export default function CropIntelligencePage() {
       } catch (err: any) {
         console.error("FastAPI Crop Prediction Error:", err);
         setErrorMessage(
-          err.message || "Unable to connect to FastAPI backend at http://127.0.0.1:8000/predict-crop. Please ensure uvicorn server is active."
+          err.message || `Unable to connect to FARMiTRON AI backend at ${process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000'}/predict-crop. Please ensure the uvicorn server is running.`
         );
       } finally {
         setIsAnalyzing(false);
@@ -148,7 +149,7 @@ export default function CropIntelligencePage() {
               <Badge variant="green" icon={<Brain className="w-3.5 h-3.5 text-[#2F6B45]" />}>
                 Live FastAPI Model: RandomForestClassifier
               </Badge>
-              <span className="text-xs font-mono text-[#66706A]">Endpoint: http://127.0.0.1:8000/predict-crop</span>
+              <span className="text-xs font-mono text-[#66706A]">{process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000'}/predict-crop</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-[#111815] tracking-tight">
               Crop Suitability Intelligence Engine
@@ -276,7 +277,7 @@ export default function CropIntelligencePage() {
             <div className="space-y-6">
               <div className="border-b border-[#EFEAE1] pb-3">
                 <h3 className="text-xl font-extrabold text-[#111815]">Step 2: Soil NPK Nutrients & pH Level</h3>
-                <p className="text-xs text-[#66706A]">Values passed directly to the http://127.0.0.1:8000/predict-crop API.</p>
+                <p className="text-xs text-[#66706A]">Values passed directly to the FastAPI /predict-crop ML endpoint.</p>
               </div>
 
               {/* NPK Inputs */}
@@ -498,7 +499,7 @@ export default function CropIntelligencePage() {
           <div className="space-y-2">
             <h3 className="text-2xl font-extrabold text-[#111815]">Communicating with FastAPI ML Backend...</h3>
             <p className="text-sm text-[#66706A]">
-              Sending N:{formData.N}, P:{formData.P}, K:{formData.K}, Temp:{formData.temperature}°C, Hum:{formData.humidity}%, pH:{formData.ph}, Rain:{formData.rainfall}mm to http://127.0.0.1:8000/predict-crop.
+              Sending N:{formData.N}, P:{formData.P}, K:{formData.K}, Temp:{formData.temperature}°C, Hum:{formData.humidity}%, pH:{formData.ph}, Rain:{formData.rainfall}mm to FastAPI /predict-crop.
             </p>
           </div>
         </div>
@@ -530,7 +531,7 @@ export default function CropIntelligencePage() {
 
                 <div>
                   <h4 className="text-2xl font-extrabold text-[#111815]">{mlResult.recommended_crop}</h4>
-                  <p className="text-xs text-[#66706A] mt-1">RandomForestClassifier Model (http://127.0.0.1:8000/predict-crop)</p>
+                  <p className="text-xs text-[#66706A] mt-1">RandomForestClassifier — FastAPI /predict-crop</p>
                 </div>
 
                 <div className="bg-[#0A1D16] text-white p-4 rounded-xl space-y-2 border border-[#E2C889]/20">

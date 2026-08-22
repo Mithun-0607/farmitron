@@ -85,7 +85,7 @@ export default function DiseaseDetectionPage() {
   const [fieldAcres, setFieldAcres] = useState(2.5);
   const [dragActive, setDragActive] = useState(false);
 
-  // File Upload Handler calling FastAPI http://127.0.0.1:8000/predict-disease
+  // File Upload Handler — calls FastAPI /predict-disease
   const handleFileUpload = async (file: File) => {
     const previewUrl = URL.createObjectURL(file);
     setCustomImagePreview(previewUrl);
@@ -93,11 +93,12 @@ export default function DiseaseDetectionPage() {
     setIsScanning(true);
     setErrorMessage(null);
 
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000';
     const formData = new FormData();
     formData.append('file', file);
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/predict-disease', {
+      const response = await fetch(`${apiBase}/predict-disease`, {
         method: 'POST',
         body: formData,
       });
@@ -115,7 +116,7 @@ export default function DiseaseDetectionPage() {
     } catch (err: any) {
       console.error('FastAPI Predict Disease Error:', err);
       setErrorMessage(
-        err.message || 'Unable to connect to FastAPI backend at http://127.0.0.1:8000/predict-disease. Please check uvicorn server.'
+        err.message || `Unable to connect to FARMiTRON AI backend at ${process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000'}/predict-disease. Please check the uvicorn server.`
       );
     } finally {
       setIsScanning(false);
@@ -137,10 +138,11 @@ export default function DiseaseDetectionPage() {
       const blob = await fetch(sample.image).then((r) => r.blob());
       const sampleFile = new File([blob], `${sample.id}.jpg`, { type: 'image/jpeg' });
       
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000';
       const formData = new FormData();
       formData.append('file', sampleFile);
 
-      const response = await fetch('http://127.0.0.1:8000/predict-disease', {
+      const response = await fetch(`${apiBase}/predict-disease`, {
         method: 'POST',
         body: formData,
       });
@@ -180,7 +182,7 @@ export default function DiseaseDetectionPage() {
             <Badge variant="gold" icon={<Brain className="w-3.5 h-3.5 text-[#2F6B45]" />}>
               MobileNetV2 Keras AI Diagnostic
             </Badge>
-            <span className="text-xs font-mono text-[#66706A]">Endpoint: http://127.0.0.1:8000/predict-disease</span>
+            <span className="text-xs font-mono text-[#66706A]">{process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000'}/predict-disease</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-extrabold text-[#17221C] tracking-tight">
             Plant Pathogen & Leaf Disease AI Diagnostic
