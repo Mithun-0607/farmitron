@@ -18,7 +18,9 @@ import {
   AlertCircle,
   Thermometer,
   Wind,
-  Brain
+  Brain,
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 
@@ -35,6 +37,7 @@ const SOIL_TYPES = [
 ];
 
 interface MlPrediction {
+  success?: boolean;
   recommended_crop: string;
   confidence: number;
   recommendation: string;
@@ -53,6 +56,7 @@ export default function CropIntelligencePage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [mlResult, setMlResult] = useState<MlPrediction | null>(null);
 
   // 7 Feature Form State matching FastAPI model requirements
@@ -61,13 +65,13 @@ export default function CropIntelligencePage() {
     district: 'Sangrur',
     season: 'Rabi',
     soilType: 'alluvial',
-    ph: 6.8,
-    N: 90,
+    ph: 6.5,
+    N: 43,
     P: 42,
     K: 43,
     temperature: 23.6,
     humidity: 82.0,
-    rainfall: 120.0,
+    rainfall: 202.9,
     acres: 3.5,
     waterSource: 'Borewell + Drip',
     budgetPerAcre: 15000,
@@ -79,38 +83,44 @@ export default function CropIntelligencePage() {
       setCurrentStep(currentStep + 1);
     } else {
       setIsAnalyzing(true);
+      setErrorMessage(null);
+
       try {
-        const res = await fetch('/api/predict-crop', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const response = await fetch("http://127.0.0.1:8000/predict-crop", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
-            N: formData.N,
-            P: formData.P,
-            K: formData.K,
-            temperature: formData.temperature,
-            humidity: formData.humidity,
-            ph: formData.ph,
-            rainfall: formData.rainfall,
+            N: Number(formData.N),
+            P: Number(formData.P),
+            K: Number(formData.K),
+            temperature: Number(formData.temperature),
+            humidity: Number(formData.humidity),
+            ph: Number(formData.ph),
+            rainfall: Number(formData.rainfall),
           }),
         });
 
-        const data = await res.json();
-        if (data.success) {
-          setMlResult(data);
-        } else {
-          // Fallback if local FastAPI server is booting
-          setMlResult({
-            recommended_crop: 'Mustard (Sarson)',
-            confidence: 94.2,
-            recommendation: 'Mustard is predicted as the optimal crop for your pH 6.8 soil balance and microclimate.',
-            inputs_received: { N: formData.N, P: formData.P, K: formData.K, temperature: formData.temperature, humidity: formData.humidity, ph: formData.ph, rainfall: formData.rainfall }
-          });
+        if (!response.ok) {
+          throw new Error(`FastAPI Server Error (${response.status}): ${response.statusText}`);
         }
-      } catch (e) {
-        console.error('FastAPI fetch error:', e);
+
+        const data = await response.json();
+        
+        if (data && (data.success || data.recommended_crop)) {
+          setMlResult(data);
+          setIsCompleted(true);
+        } else {
+          throw new Error(data.error || "Unexpected data response from Python ML backend.");
+        }
+      } catch (err: any) {
+        console.error("FastAPI Crop Prediction Error:", err);
+        setErrorMessage(
+          err.message || "Unable to connect to FastAPI backend at http://127.0.0.1:8000/predict-crop. Please ensure uvicorn server is active."
+        );
       } finally {
         setIsAnalyzing(false);
-        setIsCompleted(true);
       }
     }
   };
@@ -123,6 +133,7 @@ export default function CropIntelligencePage() {
 
   const handleReset = () => {
     setIsCompleted(false);
+    setErrorMessage(null);
     setCurrentStep(1);
   };
 
@@ -135,9 +146,9 @@ export default function CropIntelligencePage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Badge variant="green" icon={<Brain className="w-3.5 h-3.5 text-[#2F6B45]" />}>
-                ML Model: RandomForestClassifier (joblib)
+                Live FastAPI Model: RandomForestClassifier
               </Badge>
-              <span className="text-xs font-mono text-[#66706A]">FastAPI Backend: http://127.0.0.1:8000/predict-crop</span>
+              <span className="text-xs font-mono text-[#66706A]">Endpoint: http://127.0.0.1:8000/predict-crop</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-[#111815] tracking-tight">
               Crop Suitability Intelligence Engine
@@ -149,14 +160,36 @@ export default function CropIntelligencePage() {
               onClick={handleReset}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[#EFEAE1] bg-[#F9F7F1] text-xs font-bold text-[#16352B] hover:bg-[#EFEAE1]"
             >
-              <span>Modify Inputs / New Search</span>
+              <span>Modify Inputs / New Prediction</span>
             </button>
           )}
         </div>
         <p className="text-sm md:text-base text-[#66706A] max-w-3xl">
-          Powered by a real scikit-learn Machine Learning model trained on NPK nutrients, soil pH, temperature, humidity, and rainfall vectors.
+          Powered by a trained Machine Learning model evaluating NPK nutrients, soil pH, temperature, humidity, and rainfall vectors in real-time.
         </p>
       </div>
+
+      {/* ERROR MESSAGE DISPLAY BANNER */}
+      {errorMessage && (
+        <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6 flex items-start gap-4 shadow-sm">
+          <div className="p-2.5 bg-amber-100 text-amber-800 rounded-2xl shrink-0 mt-0.5">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <div className="space-y-2 flex-grow">
+            <h4 className="font-bold text-amber-950 text-base">Backend Connection Notice</h4>
+            <p className="text-xs text-amber-900 leading-relaxed">{errorMessage}</p>
+            <div className="pt-2 flex items-center gap-3">
+              <button
+                onClick={handleNext}
+                className="px-4 py-2 rounded-xl bg-amber-800 text-white text-xs font-bold hover:bg-amber-900 transition-colors flex items-center gap-1.5"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Retry Connection</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {!isCompleted && !isAnalyzing && (
         <div className="bg-white rounded-3xl p-6 md:p-10 border border-[#EFEAE1] shadow-md space-y-8">
@@ -243,10 +276,10 @@ export default function CropIntelligencePage() {
             <div className="space-y-6">
               <div className="border-b border-[#EFEAE1] pb-3">
                 <h3 className="text-xl font-extrabold text-[#111815]">Step 2: Soil NPK Nutrients & pH Level</h3>
-                <p className="text-xs text-[#66706A]">Values passed directly to the RandomForestClassifier ML model.</p>
+                <p className="text-xs text-[#66706A]">Values passed directly to the http://127.0.0.1:8000/predict-crop API.</p>
               </div>
 
-              {/* NPK Sliders */}
+              {/* NPK Inputs */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-[#F9F7F1] p-5 rounded-2xl border border-[#EFEAE1]">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-[#111815] mb-1">
@@ -463,9 +496,9 @@ export default function CropIntelligencePage() {
             <Brain className="w-8 h-8 text-[#4ADE80]" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-2xl font-extrabold text-[#111815]">Running RandomForest ML Model...</h3>
+            <h3 className="text-2xl font-extrabold text-[#111815]">Communicating with FastAPI ML Backend...</h3>
             <p className="text-sm text-[#66706A]">
-              Transmitting 7 feature parameters (N:{formData.N}, P:{formData.P}, K:{formData.K}, Temp:{formData.temperature}°C, Hum:{formData.humidity}%, pH:{formData.ph}, Rain:{formData.rainfall}mm) to FastAPI server.
+              Sending N:{formData.N}, P:{formData.P}, K:{formData.K}, Temp:{formData.temperature}°C, Hum:{formData.humidity}%, pH:{formData.ph}, Rain:{formData.rainfall}mm to http://127.0.0.1:8000/predict-crop.
             </p>
           </div>
         </div>
@@ -478,8 +511,8 @@ export default function CropIntelligencePage() {
             
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#EFEAE1] pb-4">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#66706A]">Trained ML Model Prediction</span>
-                <h3 className="text-2xl font-extrabold text-[#111815]">Optimal Recommended Crop: {mlResult.recommended_crop}</h3>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#66706A]">FastAPI Trained ML Model Output</span>
+                <h3 className="text-2xl font-extrabold text-[#111815]">Recommended Crop: {mlResult.recommended_crop}</h3>
               </div>
               <Badge variant="forest">
                 {mlResult.confidence}% Model Confidence
@@ -497,7 +530,7 @@ export default function CropIntelligencePage() {
 
                 <div>
                   <h4 className="text-2xl font-extrabold text-[#111815]">{mlResult.recommended_crop}</h4>
-                  <p className="text-xs text-[#66706A] mt-1">RandomForestClassifier Inference Engine</p>
+                  <p className="text-xs text-[#66706A] mt-1">RandomForestClassifier Model (http://127.0.0.1:8000/predict-crop)</p>
                 </div>
 
                 <div className="bg-[#0A1D16] text-white p-4 rounded-xl space-y-2 border border-[#E2C889]/20">
@@ -508,41 +541,43 @@ export default function CropIntelligencePage() {
                 </div>
               </div>
 
-              {/* Right Column: 7 Inputs Summary */}
-              <div className="lg:col-span-6 bg-[#F9F7F1] p-6 rounded-2xl border border-[#EFEAE1] space-y-4">
-                <h4 className="font-bold text-xs uppercase tracking-wider text-[#111815]">Scored Feature Vectors</h4>
-                
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                  <div className="bg-white p-3 rounded-xl border border-[#EFEAE1]">
-                    <span className="text-[10px] text-[#66706A] block">Nitrogen (N)</span>
-                    <span className="font-bold text-[#111815] text-sm">{mlResult.inputs_received.N} kg/ha</span>
-                  </div>
-                  <div className="bg-white p-3 rounded-xl border border-[#EFEAE1]">
-                    <span className="text-[10px] text-[#66706A] block">Phosphorus (P)</span>
-                    <span className="font-bold text-[#111815] text-sm">{mlResult.inputs_received.P} kg/ha</span>
-                  </div>
-                  <div className="bg-white p-3 rounded-xl border border-[#EFEAE1]">
-                    <span className="text-[10px] text-[#66706A] block">Potassium (K)</span>
-                    <span className="font-bold text-[#111815] text-sm">{mlResult.inputs_received.K} kg/ha</span>
-                  </div>
-                  <div className="bg-white p-3 rounded-xl border border-[#EFEAE1]">
-                    <span className="text-[10px] text-[#66706A] block">Soil pH</span>
-                    <span className="font-bold text-[#2F6B45] text-sm">{mlResult.inputs_received.ph}</span>
-                  </div>
-                  <div className="bg-white p-3 rounded-xl border border-[#EFEAE1]">
-                    <span className="text-[10px] text-[#66706A] block">Temperature</span>
-                    <span className="font-bold text-[#111815] text-sm">{mlResult.inputs_received.temperature}°C</span>
-                  </div>
-                  <div className="bg-white p-3 rounded-xl border border-[#EFEAE1]">
-                    <span className="text-[10px] text-[#66706A] block">Humidity</span>
-                    <span className="font-bold text-[#111815] text-sm">{mlResult.inputs_received.humidity}%</span>
-                  </div>
-                  <div className="bg-white p-3 rounded-xl border border-[#EFEAE1] col-span-2">
-                    <span className="text-[10px] text-[#66706A] block">Rainfall</span>
-                    <span className="font-bold text-[#2F6B45] text-sm">{mlResult.inputs_received.rainfall} mm</span>
+              {/* Right Column: 7 Inputs Received Summary */}
+              {mlResult.inputs_received && (
+                <div className="lg:col-span-6 bg-[#F9F7F1] p-6 rounded-2xl border border-[#EFEAE1] space-y-4">
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-[#111815]">Inputs Evaluated By ML Model</h4>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    <div className="bg-white p-3 rounded-xl border border-[#EFEAE1]">
+                      <span className="text-[10px] text-[#66706A] block">Nitrogen (N)</span>
+                      <span className="font-bold text-[#111815] text-sm">{mlResult.inputs_received.N} kg/ha</span>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-[#EFEAE1]">
+                      <span className="text-[10px] text-[#66706A] block">Phosphorus (P)</span>
+                      <span className="font-bold text-[#111815] text-sm">{mlResult.inputs_received.P} kg/ha</span>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-[#EFEAE1]">
+                      <span className="text-[10px] text-[#66706A] block">Potassium (K)</span>
+                      <span className="font-bold text-[#111815] text-sm">{mlResult.inputs_received.K} kg/ha</span>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-[#EFEAE1]">
+                      <span className="text-[10px] text-[#66706A] block">Soil pH</span>
+                      <span className="font-bold text-[#2F6B45] text-sm">{mlResult.inputs_received.ph}</span>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-[#EFEAE1]">
+                      <span className="text-[10px] text-[#66706A] block">Temperature</span>
+                      <span className="font-bold text-[#111815] text-sm">{mlResult.inputs_received.temperature}°C</span>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-[#EFEAE1]">
+                      <span className="text-[10px] text-[#66706A] block">Humidity</span>
+                      <span className="font-bold text-[#111815] text-sm">{mlResult.inputs_received.humidity}%</span>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-[#EFEAE1] col-span-2">
+                      <span className="text-[10px] text-[#66706A] block">Rainfall</span>
+                      <span className="font-bold text-[#2F6B45] text-sm">{mlResult.inputs_received.rainfall} mm</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
             </div>
           </div>
