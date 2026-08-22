@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --deep-forest: #0A1D16;
+    --forest-green: #16352B;
+    --primary-green: #2F6B45;
+    --fresh-leaf: #4ADE80;
+    --harvest-gold: #E2C889;
+    --warm-sand: #F5E8D0;
+    --cream-bg: #F9F7F1;
+    --dark-text: #111815;
+    --muted-text: #66706A;
+  }
+
+  body {
+    background-color: var(--cream-bg);
+    color: var(--dark-text);
+    font-family: var(--font-outfit), system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, .font-serif-heading {
+    font-family: var(--font-newsreader), Georgia, serif;
+  }
+}
+
+@theme {
+  --color-deep-forest: #0A1D16;
+  --color-forest-green: #16352B;
+  --color-primary-green: #2F6B45;
+  --color-fresh-leaf: #4ADE80;
+  --color-harvest-gold: #E2C889;
+  --color-warm-sand: #F5E8D0;
+  --color-cream-bg: #F9F7F1;
+  --color-dark-text: #111815;
+  --color-muted-text: #66706A;
+}
+
+/* Custom UI Mockup Styles */
+.bg-cream-mockup {
+  background-color: #F9F7F1;
+}
+
+.bg-dark-sidebar {
+  background-color: #0A1D16;
+}
+
+.bg-card-light {
+  background-color: #FFFFFF;
+  border: 1px solid #EFEAE1;
+  box-shadow: 0 4px 20px -2px rgba(10, 29, 22, 0.04);
+}
+
+.bg-card-dark {
+  background-color: #0D261E;
+  border: 1px solid rgba(226, 200, 137, 0.15);
+}
+
+/* Neural Holographic Sprout Glow */
+@keyframes neuralRing {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+}
+
+.animate-neural-ring {
+  animation: neuralRing 4s ease-in-out infinite;
+}
+
+/* Glassmorphic floating card */
+.glass-pill-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(239, 234, 225, 0.9);
+  box-shadow: 0 10px 30px -5px rgba(10, 29, 22, 0.08);
+}
+
+.glass-pill-card-dark {
+  background: rgba(13, 38, 30, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F9F7F1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E2C889;
+  border-radius: 4px;
+}
